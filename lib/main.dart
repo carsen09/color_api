@@ -1,50 +1,6 @@
-import 'dart:async';
-import 'dart:convert';
-
+// main.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-
-Future<ColorSchemeData> fetchColorScheme(String colorCode) async {
-  final response = await http.get(Uri.parse(
-      'https://www.thecolorapi.com/scheme?hex=$colorCode&format=json'));
-
-  if (response.statusCode == 200) {
-    // Jika respon sukses (statusCode 200), parsing JSON
-    return ColorSchemeData.fromJson(
-        jsonDecode(response.body) as Map<String, dynamic>);
-  } else {
-    // Jika gagal mendapatkan data, lemparkan exception
-    throw Exception('Failed to load color scheme data');
-  }
-}
-
-class ColorSchemeData {
-  final List<ColorData> colors;
-
-  ColorSchemeData({required this.colors});
-
-  factory ColorSchemeData.fromJson(Map<String, dynamic> json) {
-    var colorList = json['colors'] as List;
-    List<ColorData> colorScheme =
-        colorList.map((color) => ColorData.fromJson(color)).toList();
-
-    return ColorSchemeData(colors: colorScheme);
-  }
-}
-
-class ColorData {
-  final String hex;
-  final String name;
-
-  ColorData({required this.hex, required this.name});
-
-  factory ColorData.fromJson(Map<String, dynamic> json) {
-    return ColorData(
-      hex: json['hex']['value'] as String,
-      name: json['name']['value'] as String,
-    );
-  }
-}
+import 'color_service.dart';
 
 void main() => runApp(const MyApp());
 
@@ -58,12 +14,12 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late Future<ColorSchemeData> futureColorScheme;
   final TextEditingController _colorCodeController = TextEditingController();
+  final ColorSchemeService colorSchemeService = ColorSchemeService();
 
   @override
   void initState() {
     super.initState();
-    // Inisialisasi dengan kode warna default (misal: D93B37)
-    futureColorScheme = fetchColorScheme('D93B37');
+    futureColorScheme = colorSchemeService.fetchColorScheme('D93B37');
   }
 
   @override
@@ -96,7 +52,8 @@ class _MyAppState extends State<MyApp> {
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    futureColorScheme = fetchColorScheme(_colorCodeController.text);
+                    futureColorScheme =
+                        colorSchemeService.fetchColorScheme(_colorCodeController.text);
                   });
                 },
                 child: const Text('Fetch Color Scheme'),
@@ -126,7 +83,6 @@ class _MyAppState extends State<MyApp> {
                       return Text('${snapshot.error}');
                     }
 
-                    // Jika masih loading, tampilkan indikator loading
                     return const CircularProgressIndicator();
                   },
                 ),
