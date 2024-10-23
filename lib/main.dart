@@ -1,4 +1,3 @@
-// main.dart
 import 'package:flutter/material.dart';
 import 'color_service.dart';
 
@@ -12,14 +11,15 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  late Future<ColorSchemeData> futureColorScheme;
-  final TextEditingController _colorCodeController = TextEditingController();
+  late Future<ColorData> futureColorByCode;
+  final TextEditingController _colorCodeController = TextEditingController(); // Controller untuk input kode warna
   final ColorSchemeService colorSchemeService = ColorSchemeService();
 
   @override
   void initState() {
     super.initState();
-    futureColorScheme = colorSchemeService.fetchColorScheme('D93B37');
+    // Inisialisasi dengan warna default
+    futureColorByCode = colorSchemeService.fetchColorByCode('D93B37'); // Default color: red
   }
 
   @override
@@ -31,13 +31,13 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Color Scheme Fetch Example',
+      title: 'Color API Search by Hex Code',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
       home: Scaffold(
         appBar: AppBar(
-          title: const Text('Color Scheme Fetch Example'),
+          title: const Text('Search Color by Hex Code'),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -46,38 +46,50 @@ class _MyAppState extends State<MyApp> {
               TextField(
                 controller: _colorCodeController,
                 decoration: const InputDecoration(
-                  labelText: 'Enter Hex Color Code (without #)',
+                  labelText: 'Enter Hex Color Code (without #)', // Input label
                 ),
               ),
+              const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: () {
                   setState(() {
-                    futureColorScheme =
-                        colorSchemeService.fetchColorScheme(_colorCodeController.text);
+                    // Ambil warna berdasarkan kode yang dimasukkan oleh pengguna
+                    futureColorByCode = colorSchemeService
+                        .fetchColorByCode(_colorCodeController.text); 
                   });
                 },
-                child: const Text('Fetch Color Scheme'),
+                child: const Text('Search Color'),
               ),
+              const SizedBox(height: 16),
               Expanded(
-                child: FutureBuilder<ColorSchemeData>(
-                  future: futureColorScheme,
+                child: FutureBuilder<ColorData>(
+                  future: futureColorByCode,
                   builder: (context, snapshot) {
                     if (snapshot.hasData) {
-                      return ListView.builder(
-                        itemCount: snapshot.data!.colors.length,
-                        itemBuilder: (context, index) {
-                          final colorData = snapshot.data!.colors[index];
-                          return ListTile(
-                            title: Text(colorData.name),
-                            subtitle: Text(colorData.hex),
-                            leading: Container(
-                              width: 50,
-                              height: 50,
-                              color: Color(
-                                  int.parse(colorData.hex.replaceAll('#', '0xff'))),
-                            ),
-                          );
-                        },
+                      final colorData = snapshot.data!;
+
+                      // Parse hex code to Flutter Color
+                      String hexCode = colorData.hex.replaceAll('#', '');
+                      Color color = Color(int.parse('0xff$hexCode'));
+
+                      return Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 100,
+                            height: 100,
+                            color: color, // Display the searched color
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Color Name: ${colorData.name}',
+                            style: const TextStyle(fontSize: 18),
+                          ),
+                          Text(
+                            'Hex Code: ${colorData.hex}',
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ],
                       );
                     } else if (snapshot.hasError) {
                       return Text('${snapshot.error}');
